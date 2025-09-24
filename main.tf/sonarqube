@@ -1,1 +1,72 @@
+Step 1 — Launch 2 EC2 Instance
 
+EC2 #1 → SonarQube Server (Docker)*
+EC2 #2 → Jenkins Build Server (with Java, Maven, Jenkins installed)*
+
+
+### Install Docker & Run SonarQube on *SonarQube Server (EC2 #1)*
+
+json
+sudo apt update -y
+sudo apt install -y docker.io
+
+docker run -d --name sonarqube-custom -p 9000:9000 sonarqube:10.6-community
+
+
+- Runs SonarQube server inside Docker. Accessible at:
+
+
+http://<EC2-1-Public-IP>:9000
+
+
+## *Create Project in SonarQube UI*
+
+- Log in to SonarQube
+
+json
+http://<EC2-1-Public-IP>:9000
+
+
+- Go to *Projects → Create Project → Manually*.
+- Enter project key.
+- Generate a *token* (used for authentication by Jenkins/Maven).
+
+### Launch 2nd EC2 (Jenkins Build Server) (EC2 #2)
+
+json
+sudo apt update -y
+sudo apt install -y openjdk-17-jdk
+
+sudo apt install -y maven      # Install Maven
+
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian/jenkins.io-2023.key
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt update
+sudo apt install jenkins
+
+
+- Jenkins will be accessible at
+
+json
+http://<EC2-1-Public-IP>:8080
+
+
+- Now clone the project here and after that run the following command
+
+json
+mvn clean install -DskipTests
+
+ mvn sonar:sonar \\
+                      -Dsonar.projectKey=studentApp \\
+                      -Dsonar.projectName=\'studentApp\' \\
+                      -Dsonar.host.url=http://184.73.134.206:9000 \\
+                      -Dsonar.token=sqp_df24612e19d31ac0f9206cb357c7a9c122eb84e4
+
+- Verify in SonarQube
+
+See the analysis dashboard: code smells, vulnerabilities, coverage, etc.
+
+- In jenkins dashboard Use this pipeline script —
